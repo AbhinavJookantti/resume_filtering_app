@@ -1,0 +1,10 @@
+streamlit
+scikit-learn
+pandas
+numpy
+PyMuPDF
+python-docx
+joblib
+lxml
+sentence-transformers
+spacy
