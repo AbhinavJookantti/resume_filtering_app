@@ -1,7 +1,22 @@
 venv/
+.venv/
 __pycache__/
 *.pyc
 *.pkl
+.env
+
+# Models & large binaries
 embeddings/
-resumes/
+distilbert_resume_model/
 model/
+*.safetensors
+*.pt
+*.bin
+
+# Data & personal files
+/data/
+resumes/
+
+# OS
+.DS_Store
+Thumbs.db
