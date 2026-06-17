@@ -14,7 +14,7 @@ from utils.parser import extract_text_from_pdf, extract_text_from_docx
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# ── silence noisy logs ─────────────────────────────────────────────────────
+# silence noisy logs
 try:
     from sklearn.exceptions import InconsistentVersionWarning
     warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
@@ -27,9 +27,9 @@ warnings.filterwarnings("ignore")
 from esco_integration import extract_esco_skills, combined_score
 from shap_explainer import explain_prediction_fast, render_shap_html
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # Cached model loaders
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 @st.cache_resource
 def load_tfidf_model():
@@ -64,9 +64,9 @@ EMBEDDING_DIR = "embeddings"
 os.makedirs(UPLOAD_DIR,    exist_ok=True)
 os.makedirs(EMBEDDING_DIR, exist_ok=True)
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # Page setup & navigation
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 st.set_page_config(page_title="Resume Classifier & ATS", page_icon="📄", layout="wide")
 st.title("📄 Resume Classifier & ATS System")
@@ -74,7 +74,7 @@ st.title("📄 Resume Classifier & ATS System")
 menu   = ["User Upload", "Company Search", "Resume Parser"]
 choice = st.sidebar.selectbox("Navigation", menu)
 
-# ── Classifier settings — ONLY show on User Upload page ───────────────────
+# Classifier settings — ONLY show on User Upload page
 classifier_choice = "TF-IDF + Logistic Regression"   # default
 
 if choice == "User Upload":
@@ -97,9 +97,9 @@ if choice == "User Upload":
         unsafe_allow_html=True
     )
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # Shared helpers
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 def extract_name(text: str) -> str:
     snippet = text[:300]
@@ -129,9 +129,8 @@ def safe_extract_text(uploaded_file):
         return None
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # PAGE 1 – User Upload
-# ─────────────────────────────────────────────────────────────────────────────
 
 if choice == "User Upload":
 
@@ -151,7 +150,7 @@ if choice == "User Upload":
 
         cleaned = re.sub(r'[^\w\s]', '', text.lower())
 
-        # ── Classify ──────────────────────────────────────────────────────
+# Classify
         if classifier_choice == "DistilBERT":
             bert_clf = load_distilbert()
             if bert_clf is None:
@@ -179,7 +178,7 @@ if choice == "User Upload":
 
         category = top_matches[0][0]
 
-        # Save resume file + SBERT embedding
+# Save resume file + SBERT embedding
         cat_folder = os.path.join(UPLOAD_DIR, category)
         os.makedirs(cat_folder, exist_ok=True)
         with open(os.path.join(cat_folder, uploaded_file.name), "wb") as f:
@@ -188,7 +187,7 @@ if choice == "User Upload":
         embedding = sbert_model.encode([text])[0]
         joblib.dump(embedding, os.path.join(EMBEDDING_DIR, uploaded_file.name + ".pkl"))
 
-        # ── Results ───────────────────────────────────────────────────────
+# Results
         st.markdown("---")
         st.subheader("🎯 Classification Result")
 
@@ -202,7 +201,7 @@ if choice == "User Upload":
 
         st.success(f"✅ Resume saved under category **{category}**")
 
-        # ── Low confidence warning (< 50%) ────────────────────────────────
+# Low confidence warning (< 50
         if conf1 < 50:
             st.info(
                 f"💡 **Confidence is {conf1:.1f}%** — lower than usual. "
@@ -213,7 +212,7 @@ if choice == "User Upload":
                 "The top prediction is still the best match available."
             )
 
-        # ── SHAP explanation ──────────────────────────────────────────────
+# SHAP explanation
         st.markdown("---")
         if "TF-IDF" in used_model:
             with st.expander("🔍 Why this prediction? (Feature Contribution Analysis)"):
@@ -236,7 +235,7 @@ if choice == "User Upload":
                 "Switch the classifier in the sidebar to see them."
             )
 
-        # ── ESCO skill badges ──────────────────────────────────────────────
+# ESCO skill badges
         st.markdown("---")
         with st.expander("🛠️ ESCO Skills Detected in this Resume", expanded=True):
             st.caption(
@@ -281,7 +280,7 @@ if choice == "User Upload":
                     f'display:inline-block;font-size:13px;font-weight:500;">{s}</span>'
                     for s in esco_skills
                 )
-                # Legend
+# Legend
                 legend = (
                     '<div style="font-size:12px;color:#888;margin-bottom:8px;">'
                     '<span style="background:#2E7D32;color:white;padding:2px 8px;border-radius:8px;margin-right:6px;">Languages</span>'
@@ -301,9 +300,6 @@ if choice == "User Upload":
                 st.info("No ESCO-recognised skills detected in this resume.")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PAGE 2 – Company Search
-# ─────────────────────────────────────────────────────────────────────────────
 
 elif choice == "Company Search":
 
@@ -419,9 +415,9 @@ elif choice == "Company Search":
                 )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # PAGE 3 – Resume Parser
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 elif choice == "Resume Parser":
 
@@ -452,7 +448,7 @@ elif choice == "Resume Parser":
         if text is None:
             st.stop()
 
-        # ── Links ─────────────────────────────────────────────────────────
+# Links
         raw_links = set()
         if uploaded_file.type == "application/pdf":
             uploaded_file.seek(0)
@@ -485,7 +481,7 @@ elif choice == "Resume Parser":
         if not github and "github" in lower_text:
             github = "Mentioned (no URL found)"
 
-        # ── Basic fields ───────────────────────────────────────────────────
+# Basic fields
         lines = [l.strip() for l in text.split("\n") if l.strip()]
         name  = extract_name(text)
 
@@ -497,7 +493,7 @@ elif choice == "Resume Parser":
         if m:
             cgpa = m.group(2)
 
-        # ── Section splitting ──────────────────────────────────────────────
+# Section splitting
         HEADERS = [
             "education", "experience", "projects", "technical skills",
             "skills", "achievements", "certifications", "internships",
@@ -515,7 +511,7 @@ elif choice == "Resume Parser":
             else:
                 sections.setdefault(current, []).append(line)
 
-        # ── Education ─────────────────────────────────────────────────────
+# Education
         degree = university = ""
         edu_text = " ".join(sections.get("education", []))
         for d in ["b.tech", "bachelor", "m.tech", "mba", "b.sc", "m.sc",
@@ -529,7 +525,7 @@ elif choice == "Resume Parser":
                 university = ent.text
                 break
 
-        # ── Experience ────────────────────────────────────────────────────
+# Experience
         companies    = []
         exp_text     = " ".join(sections.get("experience", []))
         exp_doc      = nlp(exp_text[:1000])
@@ -545,7 +541,7 @@ elif choice == "Resume Parser":
 
         internships = [l for l in lines if "intern" in l.lower()]
 
-        # ── Projects ──────────────────────────────────────────────────────
+# Projects
         projects = []
         cur_proj = None
         for line in sections.get("projects", []):
@@ -558,7 +554,7 @@ elif choice == "Resume Parser":
         if cur_proj:
             projects.append(cur_proj)
 
-        # ── Skills – ESCO (with raw fallback) ─────────────────────────────
+# Skills – ESCO
         esco_skills = extract_esco_skills(text)
 
         raw_skills = []
@@ -571,7 +567,7 @@ elif choice == "Resume Parser":
         extra_raw   = [s for s in raw_skills if s and s.lower() not in esco_lower]
         final_skills = esco_skills + extra_raw
 
-        # ── Certifications ────────────────────────────────────────────────
+# Certifications
         cert_lines = (sections.get("achievements", []) +
                       sections.get("certifications", []))
         certifications = [
@@ -583,7 +579,7 @@ elif choice == "Resume Parser":
             ])
         ]
 
-        # ── Display ───────────────────────────────────────────────────────
+# Display
         st.markdown("---")
         st.subheader("📋 Structured Resume Profile")
 
@@ -620,7 +616,7 @@ elif choice == "Resume Parser":
                      "\n".join(certifications) or "Not mentioned",
                      height=80, key="p_cert")
 
-        # ── ESCO skill badges ──────────────────────────────────────────────
+# ESCO skill badges
         st.markdown("**🛠️ Skills (ESCO Canonical Names)**")
         st.caption(
             "Matched against ESCO skill dictionary. "

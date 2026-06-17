@@ -1,16 +1,4 @@
-"""
-shap_explainer.py  –  FIXED VERSION
-─────────────────────────────────────
-BUG FIXED: Previous version caused "index 18 is out of bounds for axis 0 with size 1"
-because shap.LinearExplainer returns different shapes depending on the SHAP version.
 
-FIX: Use clf.coef_ directly instead of SHAP library.
-For multiclass LogisticRegression:
-  coef_ shape = (n_classes, n_features)
-  contribution of word i for class c = coef_[c, i] * tfidf_weight[i]
-This is mathematically identical to what LinearExplainer computes,
-works on every SHAP version, and runs in milliseconds.
-"""
 
 import numpy as np
 import joblib
@@ -40,17 +28,17 @@ def explain_prediction_fast(pipeline, cleaned_text: str, predicted_class: str,
 
     class_idx = classes.index(predicted_class)
 
-    # Transform text to TF-IDF vector
+# Transform text to TF-IDF vector
     X_vec    = tfidf.transform([cleaned_text])
     X_dense  = X_vec.toarray()[0]           # shape (n_features,)
 
-    # Contribution = coefficient × TF-IDF weight  (this IS what SHAP LinearExplainer computes)
+# Contribution = coefficient × TF-IDF weight  (this IS what SHAP LinearExplainer computes
     coef          = clf.coef_[class_idx]    # shape (n_features,)
     contributions = coef * X_dense          # element-wise
 
     feature_names = np.array(tfidf.get_feature_names_out())
 
-    # Only show features actually present in this resume (non-zero TF-IDF)
+# Only show features actually present in this resume (non-zero TF-IDF
     nonzero_mask    = X_dense > 0
     active_contribs = contributions[nonzero_mask]
     active_names    = feature_names[nonzero_mask]
@@ -147,7 +135,7 @@ def render_shap_html(explanation: dict) -> str:
     return html
 
 
-# ── Standalone test ───────────────────────────────────────────────────────────
+# Standalone test
 if __name__ == "__main__":
     import sys, os
 
@@ -163,7 +151,7 @@ if __name__ == "__main__":
     print(f"Loading model from {pipeline_path} ...")
     pipe = joblib.load(pipeline_path)
 
-    # Simulate Abhinav's resume
+# Simulate Abhinav's resume
     sample = re.sub(r'[^\w\s]', '', """
     java c python javascript html css bootstrap react nodejs expressjs flask
     streamlit tensorflow spacy opencv scikit learn pandas numpy cnn nlp tfidf

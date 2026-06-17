@@ -1,19 +1,4 @@
-"""
-distilbert_inference.py
-────────────────────────
-Load and run inference with the trained DistilBERT model locally.
 
-Prerequisites:
-  1. Run train_distilbert_your_dataset.py on Colab
-  2. Download distilbert_resume_model.zip and extract it
-  3. Place the folder next to app.py
-
-Usage:
-    from distilbert_inference import DistilBertClassifier
-    clf = DistilBertClassifier("distilbert_resume_model")
-    top2 = clf.predict_top2(resume_text)
-    # → [("Python Developer", 0.91), ("Backend Developer", 0.06)]
-"""
 
 import os
 import re
@@ -88,9 +73,7 @@ class DistilBertClassifier:
         return self.predict_top2(text)[0][0]
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Standalone test
-# ─────────────────────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     import sys
     model_dir = sys.argv[1] if len(sys.argv) > 1 else "distilbert_resume_model"

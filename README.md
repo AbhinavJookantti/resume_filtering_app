@@ -15,10 +15,7 @@ A simple Streamlit tool that
   companies, projects (with description), certifications, and more
 - Output presented in a form‑like layout for easy copy/paste
 
-
-
-Getting started
------------------
+## Getting started
 
 1. Create & activate a virtual environment
 
@@ -45,29 +42,28 @@ python -m spacy download en_core_web_sm
 streamlit run app.py
 ```
 
-Notes about repository contents
------------------------------
+## Notes about repository contents
+
 - For size and privacy reasons, large model files and raw datasets are not included in this repository. The following paths are gitignored by default:
-    - `distilbert_resume_model/`, `model/`, `embeddings/`, `/data/`, `/resumes/`, and `*.safetensors`/`*.pt` files.
+  - `distilbert_resume_model/`, `model/`, `embeddings/`, `/data/`, `/resumes/`, and `*.safetensors`/`*.pt` files.
 - If you have local model weights or datasets, keep them locally in the same folder structure (they are intentionally untracked). To add large files to the repo, consider using Git LFS (`git lfs install` then `git lfs track "*.safetensors"`).
 
-Environment & secrets
----------------------
+## Environment & secrets
+
 - Create a `.env` file for any secrets (API keys, credentials). `.env` is in `.gitignore` and will not be pushed.
 
-Where things live
------------------
+## Where things live
+
 - Main app: `app.py`
 - Inference helpers: `distilbert_inference.py`
 - ESCO integration: `esco_integration.py`
 - Explainers: `shap_explainer.py`
 - Parser utilities: `utils/parser.py`
 
-Contributing
-------------
+## Contributing
+
 - Open an issue or PR if you'd like to add documentation for a missing model or dataset, or to add sample data (small anonymized examples only).
 
-License
--------
-- (Add license info here if applicable)
+## License
 
+- (Add license info here if applicable)

@@ -1,24 +1,14 @@
 """
-esco_integration.py
-────────────────────
+
 ESCO (European Skills, Competences, Qualifications and Occupations) skill
 extraction and overlap scoring.
 
-Two uses:
-  1. Resume Parser  – replace colon-split regex with ESCO-validated extraction
-  2. Company Search – add ESCO skill overlap score on top of SBERT similarity
 
-No internet connection required at inference time.
-The ESCO skill list is embedded directly below as a curated dictionary
-covering all 25 resume categories in your dataset.
 
-Usage:
-    from esco_integration import extract_esco_skills, esco_overlap_score
 
-    # In Resume Parser
-    skills = extract_esco_skills(resume_text)
 
-    # In Company Search (combine with SBERT)
+
+    
     resume_skills = extract_esco_skills(resume_text)
     jd_skills     = extract_esco_skills(job_description)
     overlap       = esco_overlap_score(resume_skills, jd_skills)
@@ -28,13 +18,13 @@ Usage:
 import re
 from typing import List, Tuple, Set
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # ESCO-aligned skill dictionary
 # Key   = canonical ESCO skill name
 # Value = list of surface forms / aliases that map to this canonical name
-# ─────────────────────────────────────────────────────────────────────────────
+
 ESCO_SKILL_MAP: dict[str, list[str]] = {
-    # ── Programming languages ────────────────────────────────────────────────
+# Programming language
     "Python": ["python", "python3", "py"],
     "Java": ["java", "java8", "java 8", "java11", "core java"],
     "JavaScript": ["javascript", "js", "es6", "ecmascript", "vanilla js"],
@@ -48,7 +38,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Swift": ["swift", "swiftui"],
     "PHP": ["php"],
 
-    # ── Web & frameworks ──────────────────────────────────────────────────────
+# Web & frameworks
     "React": ["react", "reactjs", "react.js"],
     "Vue.js": ["vue", "vuejs", "vue.js"],
     "Angular": ["angular", "angularjs"],
@@ -61,7 +51,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Spring Framework": ["spring", "spring mvc", "spring security"],
     "Hibernate": ["hibernate", "jpa", "java persistence api"],
 
-    # ── Data & ML ────────────────────────────────────────────────────────────
+# Data & ML
     "TensorFlow": ["tensorflow", "tf", "tf2"],
     "PyTorch": ["pytorch", "torch"],
     "Scikit-learn": ["scikit-learn", "sklearn", "scikit learn"],
@@ -83,7 +73,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Data visualisation": ["data visualization", "data visualisation", "matplotlib", "seaborn", "plotly"],
     "Statistics": ["statistics", "statistical analysis", "hypothesis testing", "a/b testing"],
 
-    # ── Cloud & infrastructure ───────────────────────────────────────────────
+# Cloud & infrastructure
     "Amazon Web Services": ["aws", "amazon web services", "amazon aws"],
     "Microsoft Azure": ["azure", "microsoft azure"],
     "Google Cloud Platform": ["gcp", "google cloud", "google cloud platform"],
@@ -105,7 +95,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "ArgoCD": ["argocd", "argo cd"],
     "HashiCorp Vault": ["vault", "hashicorp vault"],
 
-    # ── Databases ─────────────────────────────────────────────────────────────
+# Databases
     "PostgreSQL": ["postgresql", "postgres", "psql"],
     "MySQL": ["mysql"],
     "MongoDB": ["mongodb", "mongo"],
@@ -119,7 +109,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Oracle Database": ["oracle db", "oracle database", "pl/sql"],
     "Microsoft SQL Server": ["sql server", "mssql", "t-sql", "tsql", "ssrs", "ssis"],
 
-    # ── Mobile ──────────────────────────────────────────────────────────────
+# Mobile
     "Android development": ["android", "android sdk", "android development"],
     "Jetpack Compose": ["jetpack compose", "compose"],
     "Firebase": ["firebase"],
@@ -127,7 +117,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Room (Android)": ["room database", "room db"],
     "Dagger/Hilt": ["dagger", "hilt", "dependency injection"],
 
-    # ── Security ─────────────────────────────────────────────────────────────
+# Security
     "Network security": ["network security", "firewall", "firewalls", "ids/ips"],
     "Penetration testing": ["penetration testing", "pen testing", "pentest"],
     "SIEM": ["siem", "splunk siem"],
@@ -135,7 +125,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "OWASP": ["owasp"],
     "Incident response": ["incident response", "soc", "security operations"],
 
-    # ── Testing ──────────────────────────────────────────────────────────────
+# Testing
     "Selenium": ["selenium", "selenium webdriver"],
     "Cypress": ["cypress"],
     "Appium": ["appium"],
@@ -148,7 +138,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Regression testing": ["regression testing", "regression test"],
     "BDD": ["bdd", "cucumber", "gherkin", "behaviour driven"],
 
-    # ── Design & UX ──────────────────────────────────────────────────────────
+# Design & U
     "Figma": ["figma"],
     "Sketch": ["sketch"],
     "Adobe XD": ["adobe xd", "xd"],
@@ -157,7 +147,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Prototyping": ["prototyping", "prototype"],
     "Design systems": ["design systems", "design system"],
 
-    # ── Soft / process ────────────────────────────────────────────────────────
+# Soft / process
     "Agile methodology": ["agile", "scrum", "kanban", "sprint"],
     "System design": ["system design", "distributed systems", "scalable architecture"],
     "Code review": ["code review", "peer review"],
@@ -169,21 +159,21 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Object-oriented programming": ["oop", "object-oriented", "object oriented programming"],
     "Data structures and algorithms": ["data structures", "algorithms", "dsa"],
 
-    # ── BI / BA ──────────────────────────────────────────────────────────────
+# BI / BA
     "Power BI": ["power bi", "powerbi"],
     "Tableau": ["tableau"],
     "Requirement gathering": ["requirement gathering", "requirements analysis", "brd", "frs"],
     "Stakeholder management": ["stakeholder management", "stakeholder communication"],
     "Process improvement": ["process improvement", "bpmn", "business process"],
 
-    # ── Web fundamentals (previously missing) ────────────────────────────────
+# Web fundamentals
     "HTML": ["html", "html5", "hypertext markup language"],
     "CSS": ["css", "css3", "cascading style sheets", "sass", "scss", "styled components"],
     "Bootstrap": ["bootstrap", "bootstrap 5", "bootstrap4"],
     "Tailwind CSS": ["tailwind", "tailwind css"],
     "Webpack": ["webpack", "vite", "rollup", "parcel"],
 
-    # ── ML / AI tools (previously missing) ───────────────────────────────────
+# ML / AI tools
     "Convolutional Neural Network": ["cnn", "convolutional neural network", "convnet"],
     "OpenCV": ["opencv", "open cv", "cv2", "computer vision library"],
     "spaCy": ["spacy", "spacy nlp", "en_core_web_sm", "en core web"],
@@ -200,7 +190,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "YOLO": ["yolo", "yolov5", "yolov8", "object detection yolo"],
     "Stable Diffusion": ["stable diffusion", "diffusion model", "diffusers"],
 
-    # ── Core CS concepts (previously missing) ─────────────────────────────────
+    
     "Computer networks": ["computer networks", "computer networking", "networking",
                           "tcp/ip", "http", "dns", "osi model"],
     "Database management systems": ["dbms", "database management", "database management systems",
@@ -210,7 +200,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Compiler design": ["compiler design", "compilers", "lexical analysis"],
     "Computer architecture": ["computer architecture", "computer organisation", "coa"],
 
-    # ── Additional languages (previously missing) ─────────────────────────────
+    
     "C (programming language)": ["c programming", " c ", "c language", "c99", "c11"],
     "C#": ["c#", "csharp", "c sharp", ".net", "dotnet", "asp.net"],
     "Rust": ["rust", "rust lang", "rust programming"],
@@ -220,7 +210,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Dart": ["dart", "dart programming"],
     "Flutter": ["flutter"],
 
-    # ── Additional frameworks & tools (previously missing) ────────────────────
+    
     "FastAPI": ["fastapi", "fast api"],   # duplicate-safe, already present but adding alias
     "Celery": ["celery", "celery worker", "async task queue"],
     "Socket.io": ["socket.io", "socketio", "websockets", "websocket"],
@@ -244,7 +234,7 @@ ESCO_SKILL_MAP: dict[str, list[str]] = {
     "Canva": ["canva"],
     "Arduino": ["arduino", "raspberry pi", "iot", "embedded systems"],
 
-    # ── Soft skills & methodologies ───────────────────────────────────────────
+# Soft skills & methodologies
     "Communication skills": ["communication", "verbal communication",
                               "written communication", "presentation skills"],
     "Problem solving": ["problem solving", "problem-solving", "analytical skills",
@@ -288,28 +278,28 @@ def extract_esco_skills(text: str) -> List[str]:
     found: Set[str] = set()
     normalised = _normalise(text)
 
-    # Pass 1: multi-word phrase scan (sort by length desc for longest-match)
+# Pass 1: multi-word phrase scan (sort by length desc for longest-match
     phrases_sorted = sorted(_LOOKUP.keys(), key=len, reverse=True)
     working = normalised
 
     for phrase in phrases_sorted:
         if len(phrase.split()) < 2:
             continue
-        # Use word-boundary-like match
+# Use word-boundary-like match
         pattern = r'(?<!\w)' + re.escape(phrase) + r'(?!\w)'
         if re.search(pattern, working):
             found.add(_LOOKUP[phrase])
-            # Mask matched phrase so it doesn't double-match substrings
+# Mask matched phrase so it doesn't double-match substrings
             working = re.sub(pattern, ' __matched__ ', working)
 
-    # Pass 2: single-word token scan
+# Pass 2: single-word token scan
     tokens = re.findall(r'\b\w[\w\.\/\+\#]*\b', working)
     for token in tokens:
         t = token.lower()
         if t in _LOOKUP:
             found.add(_LOOKUP[t])
 
-    # Pass 3: colon-split fallback (for skills listed as "Languages: Python, Java")
+# Pass 3: colon-split fallback (for skills listed as "Languages: Python, Java
     for line in text.split('\n'):
         if ':' in line:
             skill_part = line.split(':', 1)[1]
@@ -317,7 +307,7 @@ def extract_esco_skills(text: str) -> List[str]:
                 item_clean = _normalise(item)
                 if item_clean in _LOOKUP:
                     found.add(_LOOKUP[item_clean])
-                # Also try each word
+# Also try each word
                 for word in item_clean.split():
                     if word in _LOOKUP:
                         found.add(_LOOKUP[word])
@@ -385,9 +375,7 @@ def combined_score(sbert_score: float,
     return round(final, 4), resume_skills, jd_skills, round(esco_score, 4)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 # Standalone test
-# ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     resume = """
     Senior Python Developer with 5 years building Django REST APIs and FastAPI services.
@@ -425,7 +413,7 @@ if __name__ == "__main__":
     print(f"\nJaccard overlap:  {jaccard:.4f}")
     print(f"Soft overlap:     {soft:.4f}  (fraction of JD skills covered)")
 
-    # Simulate combined score with mock SBERT
+# Simulate combined score with mock SBERT
     mock_sbert = 0.72
     final, _, _, esco_s = combined_score(mock_sbert, resume, jd)
     print(f"\nMock SBERT score: {mock_sbert}")
